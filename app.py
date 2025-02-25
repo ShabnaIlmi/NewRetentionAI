@@ -162,9 +162,15 @@ def test_models():
         telecom_scaler_loaded = telecom_scaler is not None
         banking_scaler_loaded = banking_scaler is not None
         
-        # Check model shapes/sizes if possible
+        # Check model and scaler types
         telecom_model_info = str(type(telecom_model)) if telecom_model else "Not loaded"
         banking_model_info = str(type(banking_model)) if banking_model else "Not loaded"
+        telecom_scaler_info = str(type(telecom_scaler)) if telecom_scaler else "Not loaded"
+        banking_scaler_info = str(type(banking_scaler)) if banking_scaler else "Not loaded"
+        
+        # Check if scalers have transform method
+        telecom_scaler_has_transform = hasattr(telecom_scaler, 'transform') if telecom_scaler else False
+        banking_scaler_has_transform = hasattr(banking_scaler, 'transform') if banking_scaler else False
         
         return jsonify({
             'telecom_model_loaded': telecom_model_loaded,
@@ -172,7 +178,11 @@ def test_models():
             'telecom_scaler_loaded': telecom_scaler_loaded,
             'banking_scaler_loaded': banking_scaler_loaded,
             'telecom_model_type': telecom_model_info,
-            'banking_model_type': banking_model_info
+            'banking_model_type': banking_model_info,
+            'telecom_scaler_type': telecom_scaler_info,
+            'banking_scaler_type': banking_scaler_info,
+            'telecom_scaler_has_transform': telecom_scaler_has_transform,
+            'banking_scaler_has_transform': banking_scaler_has_transform
         })
     except Exception as e:
         error_trace = traceback.format_exc()
@@ -217,11 +227,20 @@ def predict_banking():
         logger.info(f"Parsed user data shape: {user_data.shape}")
         
         # Scale data and log
-        logger.info("Transforming data with scaler...")
+        logger.info("Checking scaler type...")
         if banking_scaler is None:
             raise ValueError("Banking scaler is not loaded")
-        user_data_scaled = banking_scaler.transform(user_data)
-        logger.info(f"Scaled data shape: {user_data_scaled.shape}")
+        
+        # Check if scaler is actually a scaler object with transform method
+        if hasattr(banking_scaler, 'transform'):
+            logger.info("Using banking_scaler.transform() method")
+            user_data_scaled = banking_scaler.transform(user_data)
+        else:
+            # If it's not a proper scaler, just use the data as-is
+            logger.warning("Banking scaler is not a valid scaler object (no transform method). Using unscaled data.")
+            user_data_scaled = user_data
+            
+        logger.info(f"Scaled/processed data shape: {user_data_scaled.shape}")
         
         # Make prediction and log
         logger.info("Making prediction with model...")
@@ -266,11 +285,20 @@ def predict_telecom():
         logger.info(f"Parsed user data shape: {user_data.shape}")
         
         # Scale data and log
-        logger.info("Transforming data with scaler...")
+        logger.info("Checking scaler type...")
         if telecom_scaler is None:
             raise ValueError("Telecom scaler is not loaded")
-        user_data_scaled = telecom_scaler.transform(user_data)
-        logger.info(f"Scaled data shape: {user_data_scaled.shape}")
+        
+        # Check if scaler is actually a scaler object with transform method
+        if hasattr(telecom_scaler, 'transform'):
+            logger.info("Using telecom_scaler.transform() method")
+            user_data_scaled = telecom_scaler.transform(user_data)
+        else:
+            # If it's not a proper scaler, just use the data as-is
+            logger.warning("Telecom scaler is not a valid scaler object (no transform method). Using unscaled data.")
+            user_data_scaled = user_data
+            
+        logger.info(f"Scaled/processed data shape: {user_data_scaled.shape}")
         
         # Make prediction and log
         logger.info("Making prediction with model...")
