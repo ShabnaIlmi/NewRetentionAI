@@ -120,6 +120,12 @@ document.addEventListener("DOMContentLoaded", function () {
     // Function to make API calls with form data
     async function makePredictionRequest(endpoint, formData) {
         try {
+            // Show loading indicator
+            const loadingIndicator = document.getElementById(`${endpoint.includes('bank') ? 'form1' : 'form2'}Loading`);
+            if (loadingIndicator) loadingIndicator.style.display = 'block';
+            
+            console.log(`Sending data to ${endpoint}:`, formData);
+            
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
@@ -128,8 +134,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify(formData)
             });
             
+            // Hide loading indicator
+            if (loadingIndicator) loadingIndicator.style.display = 'none';
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
             }
             
             return await response.json();
@@ -154,6 +164,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (predictionElement) {
             if (data.error) {
                 predictionElement.textContent = `Error: ${data.error}`;
+                predictionElement.classList.add('error');
             } else if (data.prediction) {
                 // Calculate probability-like value based on prediction text
                 let churnProbability;
@@ -164,8 +175,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 
                 predictionElement.textContent = `Prediction: ${data.prediction}. This customer has a ${churnProbability}% chance of churning.`;
+                predictionElement.classList.remove('error');
+                
+                // Apply styling based on prediction
+                if (data.prediction === "Churned") {
+                    predictionElement.classList.add('high-risk');
+                    predictionElement.classList.remove('low-risk');
+                } else {
+                    predictionElement.classList.add('low-risk');
+                    predictionElement.classList.remove('high-risk');
+                }
             } else {
                 predictionElement.textContent = "Unable to get prediction. Please try again.";
+                predictionElement.classList.add('error');
             }
         }
     }
@@ -187,55 +209,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const cardType = document.getElementById("card-type").value;
         const satisfactionScore = parseInt(document.getElementById("satisfactionScore").value);
 
-        console.log("Form 1 values:", { creditScore, age, balance, salary, pointsEarned, gender, tenure, products, cardType, satisfactionScore });
-
         // For radio buttons (using optional chaining in case none is selected)
         const creditCard = document.querySelector('input[name="creditCard"]:checked')?.value || "Not Selected";
         const activeMember = document.querySelector('input[name="activeMember"]:checked')?.value || "Not Selected";
 
         // Advanced validations
-
-        // Validate required fields are not null or empty
-        if (!creditScore || !age || isNaN(balance) || isNaN(salary) || !pointsEarned || !gender || !tenure || !products || !cardType || !satisfactionScore) {
-            alert("All fields must be filled out.");
+        if (!validateBankFormInputs(
+            creditScore, age, balance, salary, pointsEarned, 
+            gender, tenure, products, cardType, 
+            satisfactionScore, creditCard, activeMember)) {
             return;
         }
 
-        // Validate specific ranges (Credit Score between 300-850, Age between 18-100)
-        if (creditScore < 300 || creditScore > 850) {
-            alert("Credit Score must be between 300 and 850.");
-            return;
-        }
-
-        if (age < 18 || age > 100) {
-            alert("Age must be between 18 and 100.");
-            return;
-        }
-
-        // Ensure Salary and Points Earned are non-negative
-        if (salary < 0) {
-            alert("Salary cannot be negative.");
-            return;
-        }
-
-        if (pointsEarned < 0) {
-            alert("Points Earned cannot be negative.");
-            return;
-        }
-
-        // Ensure that the balance is a valid number
-        if (isNaN(balance) || balance < 0) {
-            alert("Balance must be a valid number greater than or equal to 0.");
-            return;
-        }
-
-        // Ensure Tenure and Products are valid integers
-        if (isNaN(tenure) || isNaN(products)) {
-            alert("Tenure and Number of Products must be valid numbers.");
-            return;
-        }
-
-        // Prepare data for API
+        // Prepare data for API - make sure field names match exactly what app.py expects
         const formData = {
             credit_score: creditScore,
             age: age,
@@ -252,7 +238,81 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         // Build a confirmation message
-        const confirmationMessage = `
+        const confirmationMessage = buildBankConfirmationMessage(
+            creditScore, age, gender, tenure, balance, 
+            products, creditCard, activeMember, salary, 
+            satisfactionScore, cardType, pointsEarned
+        );
+
+        if (confirm(confirmationMessage)) {
+            // Display results section and show loading state
+            const resultsDiv = document.getElementById("form1Results");
+            if (resultsDiv) {
+                showLoading(resultsDiv);
+                
+                // Make API call to get prediction
+                const predictionData = await makePredictionRequest('/api/bank-churn-prediction', formData);
+                updateResults(resultsDiv, predictionData);
+            }
+        }
+    }
+
+    function validateBankFormInputs(
+        creditScore, age, balance, salary, pointsEarned, 
+        gender, tenure, products, cardType, 
+        satisfactionScore, creditCard, activeMember) {
+        
+        // Validate required fields are not null or empty
+        if (!creditScore || !age || isNaN(balance) || isNaN(salary) || !pointsEarned || 
+            !gender || !tenure || !products || !cardType || !satisfactionScore ||
+            creditCard === "Not Selected" || activeMember === "Not Selected") {
+            alert("All fields must be filled out.");
+            return false;
+        }
+
+        // Validate specific ranges (Credit Score between 300-850, Age between 18-100)
+        if (creditScore < 300 || creditScore > 850) {
+            alert("Credit Score must be between 300 and 850.");
+            return false;
+        }
+
+        if (age < 18 || age > 100) {
+            alert("Age must be between 18 and 100.");
+            return false;
+        }
+
+        // Ensure Salary and Points Earned are non-negative
+        if (salary < 0) {
+            alert("Salary cannot be negative.");
+            return false;
+        }
+
+        if (pointsEarned < 0) {
+            alert("Points Earned cannot be negative.");
+            return false;
+        }
+
+        // Ensure that the balance is a valid number
+        if (isNaN(balance) || balance < 0) {
+            alert("Balance must be a valid number greater than or equal to 0.");
+            return false;
+        }
+
+        // Ensure Tenure and Products are valid integers
+        if (isNaN(tenure) || isNaN(products)) {
+            alert("Tenure and Number of Products must be valid numbers.");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function buildBankConfirmationMessage(
+        creditScore, age, gender, tenure, balance, 
+        products, creditCard, activeMember, salary, 
+        satisfactionScore, cardType, pointsEarned) {
+        
+        return `
 Customer Information:
 ----------------------------------
 Credit Score: ${creditScore}
@@ -269,18 +329,6 @@ Card Type: ${cardType}
 Points Earned: ${pointsEarned}
 ----------------------------------
 Do you want to proceed?`;
-
-        if (confirm(confirmationMessage)) {
-            // Display results section and show loading state
-            const resultsDiv = document.getElementById("form1Results");
-            if (resultsDiv) {
-                showLoading(resultsDiv);
-                
-                // Make API call to get prediction
-                const predictionData = await makePredictionRequest('/api/bank-churn-prediction', formData);
-                updateResults(resultsDiv, predictionData);
-            }
-        }
     }
 
     // Validate Telecom Customer Information Form (Form 2)
@@ -295,9 +343,7 @@ Do you want to proceed?`;
         const monthlyCharges = parseFloat(document.getElementById("monthlyCharges").value);
         const serviceCalls = parseInt(document.getElementById("serviceCalls").value);
 
-        console.log("Form 2 values:", { accountLength, serviceType, contractType, monthlyCharges, serviceCalls });
-
-        // For radio buttons
+        // For radio buttons and selects
         const onlineSecurity = document.querySelector('input[name="onlineSecurity"]:checked')?.value || "Not Selected";
         const onlineBackup = document.querySelector('input[name="onlineBackup"]:checked')?.value || "Not Selected";
         const deviceProtection = document.querySelector('input[name="deviceProtection"]:checked')?.value || "Not Selected";
@@ -311,29 +357,22 @@ Do you want to proceed?`;
         const seniorCitizen = document.querySelector('input[name="seniorCitizen"]:checked')?.value || "Not Selected";
         const partner = document.querySelector('input[name="partner"]:checked')?.value || "Not Selected";
         const dependents = document.querySelector('input[name="dependents"]:checked')?.value || "Not Selected";
+        const paperlessBilling = document.querySelector('input[name="paperlessBilling"]:checked')?.value || "Yes"; // Default to Yes if not present
+        const phoneService = document.querySelector('input[name="phoneService"]:checked')?.value || "Yes"; // Default to Yes if not present
+        const multipleLines = document.querySelector('input[name="multipleLines"]:checked')?.value || "Yes"; // Default to Yes if not present
+        const paymentMethod = document.getElementById("paymentMethod")?.value || "Electronic check"; // Default to Electronic check if not present
 
-        // Advanced validations
-
-        // Validate required fields are not null or empty
-        if (!accountLength || !serviceType || !contractType || isNaN(monthlyCharges) || !serviceCalls || !gender) {
-            alert("All fields must be filled out.");
+        // Validate inputs
+        if (!validateTelecomFormInputs(
+            accountLength, serviceType, contractType, monthlyCharges, serviceCalls,
+            gender, onlineSecurity, onlineBackup, deviceProtection, techSupport,
+            streamingTV, streamingMovies, seniorCitizen, partner, dependents)) {
             return;
         }
 
-        // Ensure Monthly Charges are a valid number and not negative
-        if (isNaN(monthlyCharges) || monthlyCharges < 0) {
-            alert("Monthly Charges must be a valid number and cannot be negative.");
-            return;
-        }
-
-        // Ensure that Account Length and Service Calls are valid integers
-        if (isNaN(accountLength) || isNaN(serviceCalls)) {
-            alert("Account Length and Service Calls must be valid numbers.");
-            return;
-        }
-
-        // Prepare data for API - calculate total charges as a function of monthly charges and account length
-        const totalCharges = monthlyCharges * accountLength * 12; // Simple calculation for annual total
+        // Prepare data for API - make sure field names match exactly what app.py expects
+        // Calculate total charges as a function of monthly charges and account length
+        const totalCharges = monthlyCharges * accountLength;
 
         const formData = {
             tenure: accountLength,
@@ -341,12 +380,12 @@ Do you want to proceed?`;
             total_charges: totalCharges,
             internet_service: serviceType,
             contract: contractType,
-            paperless_billing: 1, // Default value, not in the form
+            paperless_billing: paperlessBilling === "Yes" ? 1 : 0,
             senior_citizen: seniorCitizen === "Yes" ? 1 : 0,
             streaming_tv: streamingTV === "Yes" ? 1 : 0,
             streaming_movies: streamingMovies === "Yes" ? 1 : 0,
-            multiple_lines: 1, // Default value, not in the form
-            phone_service: 1, // Default value, not in the form
+            multiple_lines: multipleLines === "Yes" ? 1 : 0,
+            phone_service: phoneService === "Yes" ? 1 : 0,
             device_protection: deviceProtection === "Yes" ? 1 : 0,
             online_backup: onlineBackup === "Yes" ? 1 : 0,
             partner: partner === "Yes" ? 1 : 0,
@@ -354,11 +393,71 @@ Do you want to proceed?`;
             tech_support: techSupport === "Yes" ? 1 : 0,
             online_security: onlineSecurity === "Yes" ? 1 : 0,
             gender: gender,
-            payment_method: "Electronic check" // Default value, not in the form
+            payment_method: paymentMethod
         };
 
         // Build a confirmation message
-        const confirmationMessage = `
+        const confirmationMessage = buildTelecomConfirmationMessage(
+            accountLength, serviceType, contractType, monthlyCharges, serviceCalls,
+            onlineSecurity, onlineBackup, deviceProtection, techSupport,
+            streamingTV, streamingMovies, gender, seniorCitizen, partner, dependents
+        );
+
+        if (confirm(confirmationMessage)) {
+            // Display results section and show loading state
+            const resultsDiv = document.getElementById("form2Results");
+            if (resultsDiv) {
+                showLoading(resultsDiv);
+                
+                // Make API call to get prediction
+                const predictionData = await makePredictionRequest('/api/telecom-churn-prediction', formData);
+                updateResults(resultsDiv, predictionData);
+            }
+        }
+    }
+
+    function validateTelecomFormInputs(
+        accountLength, serviceType, contractType, monthlyCharges, serviceCalls,
+        gender, onlineSecurity, onlineBackup, deviceProtection, techSupport,
+        streamingTV, streamingMovies, seniorCitizen, partner, dependents) {
+        
+        // Validate required fields are not null or empty
+        if (!accountLength || !serviceType || !contractType || isNaN(monthlyCharges) || !serviceCalls || !gender) {
+            alert("All fields must be filled out.");
+            return false;
+        }
+
+        // Check for radio buttons that need to be selected
+        if (onlineSecurity === "Not Selected" || onlineBackup === "Not Selected" || 
+            deviceProtection === "Not Selected" || techSupport === "Not Selected" ||
+            streamingTV === "Not Selected" || streamingMovies === "Not Selected" ||
+            seniorCitizen === "Not Selected" || partner === "Not Selected" || 
+            dependents === "Not Selected") {
+            alert("Please select an option for all Yes/No questions.");
+            return false;
+        }
+
+        // Ensure Monthly Charges are a valid number and not negative
+        if (isNaN(monthlyCharges) || monthlyCharges < 0) {
+            alert("Monthly Charges must be a valid number and cannot be negative.");
+            return false;
+        }
+
+        // Ensure that Account Length and Service Calls are valid integers
+        if (isNaN(accountLength) || isNaN(serviceCalls)) {
+            alert("Account Length and Service Calls must be valid numbers.");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function buildTelecomConfirmationMessage(
+        accountLength, serviceType, contractType, monthlyCharges, serviceCalls,
+        onlineSecurity, onlineBackup, deviceProtection, techSupport,
+        streamingTV, streamingMovies, gender, seniorCitizen, partner, dependents) {
+        
+        return `
 Telecom Customer Information:
 ----------------------------------
 Account Length: ${accountLength}
@@ -378,22 +477,7 @@ Partner: ${partner}
 Dependents: ${dependents}
 ----------------------------------
 Do you want to proceed?`;
-
-        if (confirm(confirmationMessage)) {
-            // Display results section and show loading state
-            const resultsDiv = document.getElementById("form2Results");
-            if (resultsDiv) {
-                showLoading(resultsDiv);
-                
-                // Make API call to get prediction
-                const predictionData = await makePredictionRequest('/api/telecom-churn-prediction', formData);
-                updateResults(resultsDiv, predictionData);
-            }
-        }
     }
 
     console.log("Script initialization complete");
 });
-Last edited just now
-
-
