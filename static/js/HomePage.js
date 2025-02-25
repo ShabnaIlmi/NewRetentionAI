@@ -1,10 +1,16 @@
 document.addEventListener("DOMContentLoaded", function () {
+    console.log("DOM fully loaded"); // Add this for debugging
 
     // Function to show the form and scroll to it
     function showForm(formId) {
         // Get both forms by ID
         const form1 = document.getElementById("form1");
         const form2 = document.getElementById("form2");
+
+        if (!form1 || !form2) {
+            console.error("Forms not found:", { form1, form2 });
+            return;
+        }
 
         // Initially hide both forms
         form1.style.display = "none";
@@ -26,14 +32,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (bankChurnBtn) {
         bankChurnBtn.addEventListener("click", function () {
+            console.log("Bank Churn button clicked");
             showForm("form1"); // Show Bank Churn form and scroll to it
         });
+    } else {
+        console.warn("Bank Churn button not found");
     }
 
     if (telecomChurnBtn) {
         telecomChurnBtn.addEventListener("click", function () {
+            console.log("Telecom Churn button clicked");
             showForm("form2"); // Show Telecom Churn form and scroll to it
         });
+    } else {
+        console.warn("Telecom Churn button not found");
     }
 
     // Event listener for Bank Churn link
@@ -58,13 +70,20 @@ document.addEventListener("DOMContentLoaded", function () {
     function changeValue(inputId, step) {
         const input = document.getElementById(inputId);
         if (input) {
+            console.log(`Changing value for ${inputId} by ${step}`);
             const min = parseInt(input.getAttribute("min")) || -Infinity;
             const max = parseInt(input.getAttribute("max")) || Infinity;
             const currentValue = parseInt(input.value) || 0;
             const newValue = currentValue + step;
+            
             if (newValue >= min && newValue <= max) {
                 input.value = newValue;
+                // Trigger an input event to ensure any listeners are notified
+                const event = new Event('input', { bubbles: true });
+                input.dispatchEvent(event);
             }
+        } else {
+            console.error(`Input with ID ${inputId} not found`);
         }
     }
 
@@ -72,16 +91,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const plusBtns = document.querySelectorAll(".plus");
     const minusBtns = document.querySelectorAll(".minus");
 
+    console.log(`Found ${plusBtns.length} plus buttons and ${minusBtns.length} minus buttons`);
+
     plusBtns.forEach((btn) => {
-        btn.addEventListener("click", function () {
+        btn.addEventListener("click", function (e) {
+            e.preventDefault(); // Prevent default button behavior
             const inputId = btn.getAttribute("data-input-id");
+            console.log(`Plus button clicked for ${inputId}`);
             changeValue(inputId, 1);
         });
     });
 
     minusBtns.forEach((btn) => {
-        btn.addEventListener("click", function () {
+        btn.addEventListener("click", function (e) {
+            e.preventDefault(); // Prevent default button behavior
             const inputId = btn.getAttribute("data-input-id");
+            console.log(`Minus button clicked for ${inputId}`);
             changeValue(inputId, -1);
         });
     });
@@ -99,6 +124,8 @@ document.addEventListener("DOMContentLoaded", function () {
             slider.addEventListener("input", function () {
                 display.textContent = slider.value;
             });
+        } else {
+            console.warn("Satisfaction slider or display element not found");
         }
     }
 
@@ -110,6 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Validate Bank Customer Information Form (Form 1)
     function validateForm1(event) {
         event.preventDefault();
+        console.log("Validating Form 1");
 
         // Retrieve values from Form 1 inputs
         const creditScore = parseInt(document.getElementById("creditScore").value);
@@ -122,6 +150,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const products = parseInt(document.getElementById("products").value);
         const cardType = document.getElementById("card-type").value;
         const satisfactionScore = document.getElementById("satisfactionScore").value;
+
+        console.log("Form 1 values:", { creditScore, age, balance, salary, pointsEarned, gender, tenure, products, cardType, satisfactionScore });
 
         // For radio buttons (using optional chaining in case none is selected)
         const creditCard = document.querySelector('input[name="creditCard"]:checked')?.value || "Not Selected";
@@ -190,13 +220,21 @@ Do you want to proceed?`;
 
         if (confirm(confirmationMessage)) {
             alert("Form 1 submitted successfully!");
-            document.getElementById("form1").submit();
+            // Get the form element
+            const form = document.getElementById("form1");
+            if (form) {
+                form.submit();
+            } else {
+                console.error("Form element not found");
+                alert("Error: Form element not found");
+            }
         }
     }
 
     // Validate Telecom Customer Information Form (Form 2)
     function validateForm2(event) {
         event.preventDefault();
+        console.log("Validating Form 2");
 
         // Retrieve values from Form 2 inputs
         const accountLength = parseInt(document.getElementById("accountLength").value);
@@ -205,6 +243,8 @@ Do you want to proceed?`;
         const monthlyCharges = parseFloat(document.getElementById("monthlyCharges").value);
         const serviceCalls = parseInt(document.getElementById("serviceCalls").value);
 
+        console.log("Form 2 values:", { accountLength, serviceType, contractType, monthlyCharges, serviceCalls });
+
         // For radio buttons
         const onlineSecurity = document.querySelector('input[name="onlineSecurity"]:checked')?.value || "Not Selected";
         const onlineBackup = document.querySelector('input[name="onlineBackup"]:checked')?.value || "Not Selected";
@@ -212,7 +252,7 @@ Do you want to proceed?`;
         const techSupport = document.querySelector('input[name="techSupport"]:checked')?.value || "Not Selected";
         const streamingTV = document.querySelector('input[name="streamingTV"]:checked')?.value || "Not Selected";
         const streamingMovies = document.querySelector('input[name="streamingMovies"]:checked')?.value || "Not Selected";
-        const gender = document.getElementById("gender").value;
+        const gender = document.querySelector('select[name="gender"]')?.value || document.getElementById("gender").value;
         const seniorCitizen = document.querySelector('input[name="seniorCitizen"]:checked')?.value || "Not Selected";
         const partner = document.querySelector('input[name="partner"]:checked')?.value || "Not Selected";
         const dependents = document.querySelector('input[name="dependents"]:checked')?.value || "Not Selected";
@@ -261,18 +301,33 @@ Do you want to proceed?`;
 
         if (confirm(confirmationMessage)) {
             alert("Form 2 submitted successfully!");
-            document.getElementById("form2").submit();
+            // Get the form element
+            const form = document.getElementById("form2");
+            if (form) {
+                form.submit();
+            } else {
+                console.error("Form element not found");
+                alert("Error: Form element not found");
+            }
         }
     }
 
     // Attach event listeners to validation functions
     const submitBtn1 = document.getElementById("submitBtn1");
     if (submitBtn1) {
+        console.log("Adding event listener to submitBtn1");
         submitBtn1.addEventListener("click", validateForm1);
+    } else {
+        console.warn("Submit button 1 not found");
     }
 
     const submitBtn2 = document.getElementById("submitBtn2");
     if (submitBtn2) {
+        console.log("Adding event listener to submitBtn2");
         submitBtn2.addEventListener("click", validateForm2);
+    } else {
+        console.warn("Submit button 2 not found");
     }
+
+    console.log("Script initialization complete");
 });
