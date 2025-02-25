@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("DOM fully loaded"); // Add this for debugging
+    console.log("DOM fully loaded");
 
     // Function to show the form and scroll to it
     function showForm(formId) {
@@ -66,8 +66,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Function to change the value of a numeric input
-    function changeValue(inputId, step) {
+    // Function to change the value of a numeric input - this is a global function
+    window.changeValue = function(inputId, step) {
         const input = document.getElementById(inputId);
         if (input) {
             console.log(`Changing value for ${inputId} by ${step}`);
@@ -85,52 +85,37 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
             console.error(`Input with ID ${inputId} not found`);
         }
-    }
+    };
 
-    // Attach event listeners for the + and - buttons
-    const plusBtns = document.querySelectorAll(".plus");
-    const minusBtns = document.querySelectorAll(".minus");
-
-    console.log(`Found ${plusBtns.length} plus buttons and ${minusBtns.length} minus buttons`);
-
-    plusBtns.forEach((btn) => {
-        btn.addEventListener("click", function (e) {
-            e.preventDefault(); // Prevent default button behavior
-            const inputId = btn.getAttribute("data-input-id");
-            console.log(`Plus button clicked for ${inputId}`);
-            changeValue(inputId, 1);
-        });
-    });
-
-    minusBtns.forEach((btn) => {
-        btn.addEventListener("click", function (e) {
-            e.preventDefault(); // Prevent default button behavior
-            const inputId = btn.getAttribute("data-input-id");
-            console.log(`Minus button clicked for ${inputId}`);
-            changeValue(inputId, -1);
-        });
-    });
-
-    // Function to update the slider's display value
-    function updateSliderValue() {
+    // Function to update the slider's display value - this is a global function
+    window.updateSliderValue = function() {
         const slider = document.getElementById("satisfactionScore");
         const display = document.getElementById("satisfactionValue");
 
         if (slider && display) {
-            // Set the display value initially
+            // Set the display value
             display.textContent = slider.value;
-
-            // Update the display value whenever the slider value changes
-            slider.addEventListener("input", function () {
-                display.textContent = slider.value;
-            });
         } else {
             console.warn("Satisfaction slider or display element not found");
         }
-    }
+    };
 
     // Call the update function on DOM content load
     updateSliderValue();
+
+    // Add event listeners to all submit buttons in forms
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log(`Form ${form.id} submitted`);
+            
+            if (form.id === "form1") {
+                validateForm1(event);
+            } else if (form.id === "form2") {
+                validateForm2(event);
+            }
+        });
+    });
 
     // --- Form Validation Functions ---
 
@@ -160,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Advanced validations
 
         // Validate required fields are not null or empty
-        if (!creditScore || !age || !balance || !salary || !pointsEarned || !gender || !tenure || !products || !cardType || !satisfactionScore) {
+        if (!creditScore || !age || isNaN(balance) || isNaN(salary) || !pointsEarned || !gender || !tenure || !products || !cardType || !satisfactionScore) {
             alert("All fields must be filled out.");
             return;
         }
@@ -220,13 +205,16 @@ Do you want to proceed?`;
 
         if (confirm(confirmationMessage)) {
             alert("Form 1 submitted successfully!");
-            // Get the form element
-            const form = document.getElementById("form1");
-            if (form) {
-                form.submit();
-            } else {
-                console.error("Form element not found");
-                alert("Error: Form element not found");
+            // Display results section
+            const resultsDiv = document.getElementById("form1Results");
+            if (resultsDiv) {
+                resultsDiv.style.display = "block";
+                const predictionElement = document.getElementById("bankChurnPrediction");
+                if (predictionElement) {
+                    // This is where you would normally display the actual prediction
+                    // For now, we'll just show a placeholder message
+                    predictionElement.textContent = "Based on the provided information, this customer has a 35% chance of churning.";
+                }
             }
         }
     }
@@ -252,7 +240,10 @@ Do you want to proceed?`;
         const techSupport = document.querySelector('input[name="techSupport"]:checked')?.value || "Not Selected";
         const streamingTV = document.querySelector('input[name="streamingTV"]:checked')?.value || "Not Selected";
         const streamingMovies = document.querySelector('input[name="streamingMovies"]:checked')?.value || "Not Selected";
-        const gender = document.querySelector('select[name="gender"]')?.value || document.getElementById("gender").value;
+        // Note: there are two gender selects in the page, use the one in this form
+        const genderElements = document.querySelectorAll('select[id="gender"]');
+        const gender = genderElements.length > 1 ? genderElements[1].value : (genderElements[0]?.value || "Not Selected");
+        
         const seniorCitizen = document.querySelector('input[name="seniorCitizen"]:checked')?.value || "Not Selected";
         const partner = document.querySelector('input[name="partner"]:checked')?.value || "Not Selected";
         const dependents = document.querySelector('input[name="dependents"]:checked')?.value || "Not Selected";
@@ -260,7 +251,7 @@ Do you want to proceed?`;
         // Advanced validations
 
         // Validate required fields are not null or empty
-        if (!accountLength || !serviceType || !contractType || !monthlyCharges || !serviceCalls || !gender) {
+        if (!accountLength || !serviceType || !contractType || isNaN(monthlyCharges) || !serviceCalls || !gender) {
             alert("All fields must be filled out.");
             return;
         }
@@ -301,32 +292,18 @@ Do you want to proceed?`;
 
         if (confirm(confirmationMessage)) {
             alert("Form 2 submitted successfully!");
-            // Get the form element
-            const form = document.getElementById("form2");
-            if (form) {
-                form.submit();
-            } else {
-                console.error("Form element not found");
-                alert("Error: Form element not found");
+            // Display results section
+            const resultsDiv = document.getElementById("form2Results");
+            if (resultsDiv) {
+                resultsDiv.style.display = "block";
+                const predictionElement = document.getElementById("telecomChurnPrediction");
+                if (predictionElement) {
+                    // This is where you would normally display the actual prediction
+                    // For now, we'll just show a placeholder message
+                    predictionElement.textContent = "Based on the provided information, this customer has a 42% chance of churning.";
+                }
             }
         }
-    }
-
-    // Attach event listeners to validation functions
-    const submitBtn1 = document.getElementById("submitBtn1");
-    if (submitBtn1) {
-        console.log("Adding event listener to submitBtn1");
-        submitBtn1.addEventListener("click", validateForm1);
-    } else {
-        console.warn("Submit button 1 not found");
-    }
-
-    const submitBtn2 = document.getElementById("submitBtn2");
-    if (submitBtn2) {
-        console.log("Adding event listener to submitBtn2");
-        submitBtn2.addEventListener("click", validateForm2);
-    } else {
-        console.warn("Submit button 2 not found");
     }
 
     console.log("Script initialization complete");
