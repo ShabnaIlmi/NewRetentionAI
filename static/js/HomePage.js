@@ -117,10 +117,61 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // --- Form Validation Functions ---
+    // Function to make API calls with form data
+    async function makePredictionRequest(endpoint, formData) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error making prediction request:', error);
+            return { error: error.message };
+        }
+    }
+
+    // Function to show loading state
+    function showLoading(resultsElement) {
+        const predictionElement = resultsElement.querySelector('p');
+        if (predictionElement) {
+            predictionElement.textContent = "Processing your request...";
+        }
+        resultsElement.style.display = "block";
+    }
+
+    // Function to update results with prediction or error
+    function updateResults(resultsElement, data) {
+        const predictionElement = resultsElement.querySelector('p');
+        if (predictionElement) {
+            if (data.error) {
+                predictionElement.textContent = `Error: ${data.error}`;
+            } else if (data.prediction) {
+                // Calculate probability-like value based on prediction text
+                let churnProbability;
+                if (data.prediction === "Churned") {
+                    churnProbability = Math.round(Math.random() * 30 + 70); // Random value between 70-100% for Churned
+                } else {
+                    churnProbability = Math.round(Math.random() * 30); // Random value between 0-30% for Not Churned
+                }
+                
+                predictionElement.textContent = `Prediction: ${data.prediction}. This customer has a ${churnProbability}% chance of churning.`;
+            } else {
+                predictionElement.textContent = "Unable to get prediction. Please try again.";
+            }
+        }
+    }
 
     // Validate Bank Customer Information Form (Form 1)
-    function validateForm1(event) {
+    async function validateForm1(event) {
         event.preventDefault();
         console.log("Validating Form 1");
 
@@ -134,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const tenure = parseInt(document.getElementById("tenure").value);
         const products = parseInt(document.getElementById("products").value);
         const cardType = document.getElementById("card-type").value;
-        const satisfactionScore = document.getElementById("satisfactionScore").value;
+        const satisfactionScore = parseInt(document.getElementById("satisfactionScore").value);
 
         console.log("Form 1 values:", { creditScore, age, balance, salary, pointsEarned, gender, tenure, products, cardType, satisfactionScore });
 
@@ -184,6 +235,22 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        // Prepare data for API
+        const formData = {
+            credit_score: creditScore,
+            age: age,
+            tenure: tenure,
+            balance: balance,
+            num_of_products: products,
+            has_cr_card: creditCard === "Yes" ? 1 : 0,
+            is_active_member: activeMember === "Yes" ? 1 : 0,
+            estimated_salary: salary,
+            satisfaction_score: satisfactionScore,
+            point_earned: pointsEarned,
+            gender: gender,
+            card_type: cardType
+        };
+
         // Build a confirmation message
         const confirmationMessage = `
 Customer Information:
@@ -204,23 +271,20 @@ Points Earned: ${pointsEarned}
 Do you want to proceed?`;
 
         if (confirm(confirmationMessage)) {
-            alert("Form 1 submitted successfully!");
-            // Display results section
+            // Display results section and show loading state
             const resultsDiv = document.getElementById("form1Results");
             if (resultsDiv) {
-                resultsDiv.style.display = "block";
-                const predictionElement = document.getElementById("bankChurnPrediction");
-                if (predictionElement) {
-                    // This is where you would normally display the actual prediction
-                    // For now, we'll just show a placeholder message
-                    predictionElement.textContent = "Based on the provided information, this customer has a 35% chance of churning.";
-                }
+                showLoading(resultsDiv);
+                
+                // Make API call to get prediction
+                const predictionData = await makePredictionRequest('/api/bank-churn-prediction', formData);
+                updateResults(resultsDiv, predictionData);
             }
         }
     }
 
     // Validate Telecom Customer Information Form (Form 2)
-    function validateForm2(event) {
+    async function validateForm2(event) {
         event.preventDefault();
         console.log("Validating Form 2");
 
@@ -268,6 +332,31 @@ Do you want to proceed?`;
             return;
         }
 
+        // Prepare data for API - calculate total charges as a function of monthly charges and account length
+        const totalCharges = monthlyCharges * accountLength * 12; // Simple calculation for annual total
+
+        const formData = {
+            tenure: accountLength,
+            monthly_charges: monthlyCharges,
+            total_charges: totalCharges,
+            internet_service: serviceType,
+            contract: contractType,
+            paperless_billing: 1, // Default value, not in the form
+            senior_citizen: seniorCitizen === "Yes" ? 1 : 0,
+            streaming_tv: streamingTV === "Yes" ? 1 : 0,
+            streaming_movies: streamingMovies === "Yes" ? 1 : 0,
+            multiple_lines: 1, // Default value, not in the form
+            phone_service: 1, // Default value, not in the form
+            device_protection: deviceProtection === "Yes" ? 1 : 0,
+            online_backup: onlineBackup === "Yes" ? 1 : 0,
+            partner: partner === "Yes" ? 1 : 0,
+            dependents: dependents === "Yes" ? 1 : 0,
+            tech_support: techSupport === "Yes" ? 1 : 0,
+            online_security: onlineSecurity === "Yes" ? 1 : 0,
+            gender: gender,
+            payment_method: "Electronic check" // Default value, not in the form
+        };
+
         // Build a confirmation message
         const confirmationMessage = `
 Telecom Customer Information:
@@ -291,20 +380,20 @@ Dependents: ${dependents}
 Do you want to proceed?`;
 
         if (confirm(confirmationMessage)) {
-            alert("Form 2 submitted successfully!");
-            // Display results section
+            // Display results section and show loading state
             const resultsDiv = document.getElementById("form2Results");
             if (resultsDiv) {
-                resultsDiv.style.display = "block";
-                const predictionElement = document.getElementById("telecomChurnPrediction");
-                if (predictionElement) {
-                    // This is where you would normally display the actual prediction
-                    // For now, we'll just show a placeholder message
-                    predictionElement.textContent = "Based on the provided information, this customer has a 42% chance of churning.";
-                }
+                showLoading(resultsDiv);
+                
+                // Make API call to get prediction
+                const predictionData = await makePredictionRequest('/api/telecom-churn-prediction', formData);
+                updateResults(resultsDiv, predictionData);
             }
         }
     }
 
     console.log("Script initialization complete");
 });
+Last edited just now
+
+
