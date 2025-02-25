@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Function to make API calls with form data
+    // Function to make API calls with form data - FIXED VERSION
     async function makePredictionRequest(endpoint, formData) {
         try {
             // Show loading indicator
@@ -137,12 +137,15 @@ document.addEventListener("DOMContentLoaded", function () {
             // Hide loading indicator
             if (loadingIndicator) loadingIndicator.style.display = 'none';
             
+            // Get the response data
+            const responseData = await response.json();
+            console.log('API Response:', responseData);
+            
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+                throw new Error(responseData.error || `HTTP error! Status: ${response.status}`);
             }
             
-            return await response.json();
+            return responseData;
         } catch (error) {
             console.error('Error making prediction request:', error);
             return { error: error.message };
@@ -154,41 +157,53 @@ document.addEventListener("DOMContentLoaded", function () {
         const predictionElement = resultsElement.querySelector('p');
         if (predictionElement) {
             predictionElement.textContent = "Processing your request...";
+        } else {
+            // Create a paragraph element if it doesn't exist
+            const newPredictionElement = document.createElement('p');
+            newPredictionElement.textContent = "Processing your request...";
+            resultsElement.appendChild(newPredictionElement);
         }
         resultsElement.style.display = "block";
     }
 
-    // Function to update results with prediction or error
+    // Function to update results with prediction or error - FIXED VERSION
     function updateResults(resultsElement, data) {
-        const predictionElement = resultsElement.querySelector('p');
-        if (predictionElement) {
-            if (data.error) {
-                predictionElement.textContent = `Error: ${data.error}`;
-                predictionElement.classList.add('error');
-            } else if (data.prediction) {
-                // Calculate probability-like value based on prediction text
-                let churnProbability;
-                if (data.prediction === "Churned") {
-                    churnProbability = Math.round(Math.random() * 30 + 70); // Random value between 70-100% for Churned
-                } else {
-                    churnProbability = Math.round(Math.random() * 30); // Random value between 0-30% for Not Churned
-                }
-                
-                predictionElement.textContent = `Prediction: ${data.prediction}. This customer has a ${churnProbability}% chance of churning.`;
-                predictionElement.classList.remove('error');
-                
-                // Apply styling based on prediction
-                if (data.prediction === "Churned") {
-                    predictionElement.classList.add('high-risk');
-                    predictionElement.classList.remove('low-risk');
-                } else {
-                    predictionElement.classList.add('low-risk');
-                    predictionElement.classList.remove('high-risk');
-                }
+        let predictionElement = resultsElement.querySelector('p');
+        
+        // If paragraph doesn't exist, create one
+        if (!predictionElement) {
+            predictionElement = document.createElement('p');
+            resultsElement.appendChild(predictionElement);
+        }
+        
+        if (data.error) {
+            predictionElement.textContent = `Error: ${data.error}`;
+            predictionElement.classList.add('error');
+            predictionElement.classList.remove('high-risk', 'low-risk');
+        } else if (data.prediction) {
+            // Calculate probability-like value based on prediction text
+            let churnProbability;
+            if (data.prediction === "Churned") {
+                churnProbability = Math.round(Math.random() * 30 + 70); // Random value between 70-100% for Churned
             } else {
-                predictionElement.textContent = "Unable to get prediction. Please try again.";
-                predictionElement.classList.add('error');
+                churnProbability = Math.round(Math.random() * 30); // Random value between 0-30% for Not Churned
             }
+            
+            predictionElement.textContent = `Prediction: ${data.prediction}. This customer has a ${churnProbability}% chance of churning.`;
+            predictionElement.classList.remove('error');
+            
+            // Apply styling based on prediction
+            if (data.prediction === "Churned") {
+                predictionElement.classList.add('high-risk');
+                predictionElement.classList.remove('low-risk');
+            } else {
+                predictionElement.classList.add('low-risk');
+                predictionElement.classList.remove('high-risk');
+            }
+        } else {
+            predictionElement.textContent = "Unable to get prediction. Please try again.";
+            predictionElement.classList.add('error');
+            predictionElement.classList.remove('high-risk', 'low-risk');
         }
     }
 
@@ -253,6 +268,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Make API call to get prediction
                 const predictionData = await makePredictionRequest('/api/bank-churn-prediction', formData);
                 updateResults(resultsDiv, predictionData);
+            } else {
+                console.error("Results div not found for form1");
             }
         }
     }
@@ -412,6 +429,8 @@ Do you want to proceed?`;
                 // Make API call to get prediction
                 const predictionData = await makePredictionRequest('/api/telecom-churn-prediction', formData);
                 updateResults(resultsDiv, predictionData);
+            } else {
+                console.error("Results div not found for form2");
             }
         }
     }
