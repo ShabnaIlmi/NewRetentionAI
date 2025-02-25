@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-    
+
     // Function to show the form and scroll to it
     function showForm(formId) {
         // Get both forms by ID
@@ -68,11 +68,29 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // Attach event listeners for the + and - buttons
+    const plusBtns = document.querySelectorAll(".plus");
+    const minusBtns = document.querySelectorAll(".minus");
+
+    plusBtns.forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const inputId = btn.getAttribute("data-input-id");
+            changeValue(inputId, 1);
+        });
+    });
+
+    minusBtns.forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const inputId = btn.getAttribute("data-input-id");
+            changeValue(inputId, -1);
+        });
+    });
+
     // Function to update the slider's display value
     function updateSliderValue() {
         const slider = document.getElementById("satisfactionScore");
         const display = document.getElementById("satisfactionValue");
-        
+
         if (slider && display) {
             // Set the display value initially
             display.textContent = slider.value;
@@ -112,7 +130,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Advanced validations
 
         // Validate required fields are not null or empty
-        if (!creditScore || !age || !balance || !salary || !pointsEarned ||!gender || !tenure || !products || !cardType || !satisfactionScore) {
+        if (!creditScore || !age || !balance || !salary || !pointsEarned || !gender || !tenure || !products || !cardType || !satisfactionScore) {
             alert("All fields must be filled out.");
             return;
         }
