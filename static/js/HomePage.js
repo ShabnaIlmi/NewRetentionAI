@@ -139,7 +139,7 @@ document.addEventListener("DOMContentLoaded", function () {
             
             // Get the response data
             const responseData = await response.json();
-            console.log('API Response:', responseData);
+            console.log('API Response Data:', responseData);
             
             if (!response.ok) {
                 throw new Error(responseData.error || `HTTP error! Status: ${response.status}`);
@@ -154,6 +154,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Function to show loading state
     function showLoading(resultsElement) {
+        // Make sure results container is visible
+        resultsElement.style.display = "block";
+        
         const predictionElement = resultsElement.querySelector('p');
         if (predictionElement) {
             predictionElement.textContent = "Processing your request...";
@@ -163,11 +166,20 @@ document.addEventListener("DOMContentLoaded", function () {
             newPredictionElement.textContent = "Processing your request...";
             resultsElement.appendChild(newPredictionElement);
         }
-        resultsElement.style.display = "block";
     }
 
     // Function to update results with prediction or error - FIXED VERSION
     function updateResults(resultsElement, data) {
+        // Debug logs to troubleshoot display issues
+        console.log("Updating results:", { 
+            elementExists: !!resultsElement, 
+            isVisible: resultsElement.style.display,
+            data: data
+        });
+        
+        // Ensure element is visible
+        resultsElement.style.display = "block";
+        
         let predictionElement = resultsElement.querySelector('p');
         
         // If paragraph doesn't exist, create one
@@ -245,7 +257,7 @@ document.addEventListener("DOMContentLoaded", function () {
             num_of_products: products,
             has_cr_card: creditCard === "Yes" ? 1 : 0,
             is_active_member: activeMember === "Yes" ? 1 : 0,
-            estimated_salary: salary,
+            estimated_salary: parseFloat(salary), // Ensure this is a float
             satisfaction_score: satisfactionScore,
             point_earned: pointsEarned,
             gender: gender,
@@ -270,6 +282,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 updateResults(resultsDiv, predictionData);
             } else {
                 console.error("Results div not found for form1");
+                
+                // Create results div if it doesn't exist
+                const form1 = document.getElementById("form1");
+                if (form1) {
+                    const newResultsDiv = document.createElement('div');
+                    newResultsDiv.id = "form1Results";
+                    newResultsDiv.className = "results-container";
+                    form1.appendChild(newResultsDiv);
+                    
+                    showLoading(newResultsDiv);
+                    const predictionData = await makePredictionRequest('/api/bank-churn-prediction', formData);
+                    updateResults(newResultsDiv, predictionData);
+                }
             }
         }
     }
@@ -431,6 +456,19 @@ Do you want to proceed?`;
                 updateResults(resultsDiv, predictionData);
             } else {
                 console.error("Results div not found for form2");
+                
+                // Create results div if it doesn't exist
+                const form2 = document.getElementById("form2");
+                if (form2) {
+                    const newResultsDiv = document.createElement('div');
+                    newResultsDiv.id = "form2Results";
+                    newResultsDiv.className = "results-container";
+                    form2.appendChild(newResultsDiv);
+                    
+                    showLoading(newResultsDiv);
+                    const predictionData = await makePredictionRequest('/api/telecom-churn-prediction', formData);
+                    updateResults(newResultsDiv, predictionData);
+                }
             }
         }
     }
