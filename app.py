@@ -93,14 +93,10 @@ def parse_telecom_form(form_data):
         estimated_salary = float(form_data['estimated_salary'])
         satisfaction_score = int(form_data['satisfaction_score'])
         point_earned = int(form_data['point_earned'])
-        geography = form_data['geography']
         gender = form_data['gender']
         card_type = form_data['card_type']
 
         # One-hot Encoding Categorical Variables
-        geography_encoded = [1 if geography == "France" else 0,
-                             1 if geography == "Germany" else 0,
-                             1 if geography == "Spain" else 0]
         gender_encoded = [1 if gender == "Male" else 0, 1 if gender == "Female" else 0]
         card_type_encoded = [1 if card_type == "DIAMOND" else 0,
                              1 if card_type == "GOLD" else 0,
@@ -111,7 +107,7 @@ def parse_telecom_form(form_data):
         features = np.array([credit_score, age, tenure, balance, num_of_products,
                              has_cr_card, is_active_member, estimated_salary,
                              satisfaction_score, point_earned] +
-                            geography_encoded + gender_encoded + card_type_encoded).reshape(1, -1)
+                            gender_encoded + card_type_encoded).reshape(1, -1)
         return features
 
     except KeyError as e:
