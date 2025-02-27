@@ -31,12 +31,25 @@ document.addEventListener("DOMContentLoaded", function () {
         validateField(input);
     };
 
-    // Function to handle radio buttons and dropdowns
-    window.changeValue = function(inputId, value) {
+    // Function to handle value changes for numeric inputs
+    window.changeValue = function(inputId, change) {
         const input = document.getElementById(inputId);
         if (!input) return;
         
-        input.value = value;
+        // Parse current value as a number
+        let currentValue = parseFloat(input.value) || 0;
+        let min = parseFloat(input.getAttribute('min'));
+        let max = parseFloat(input.getAttribute('max'));
+        
+        // Apply the change
+        let newValue = currentValue + change;
+        
+        // Apply min/max constraints
+        if (!isNaN(min) && newValue < min) newValue = min;
+        if (!isNaN(max) && newValue > max) newValue = max;
+        
+        // Update the input value
+        input.value = newValue;
         validateField(input);
     };
 
@@ -184,6 +197,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // Function to update satisfaction slider value display
+    window.updateSliderValue = function() {
+        const slider = document.getElementById('satisfactionScore');
+        const display = document.getElementById('satisfactionValue');
+        if (slider && display) {
+            display.textContent = slider.value;
+        }
+    };
+
     // Initialize form event listeners
     const forms = document.querySelectorAll('#form1, #form2');
     forms.forEach(form => {
@@ -233,45 +255,25 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Find all numeric input groups with + and - buttons
-    const numericInputGroups = document.querySelectorAll('.numeric-input-group');
-    
-    numericInputGroups.forEach(group => {
-        const input = group.querySelector('input[type="number"]');
-        const decrementBtn = group.querySelector('.decrement-btn');
-        const incrementBtn = group.querySelector('.increment-btn');
-        
-        if (input && decrementBtn && incrementBtn) {
-            const inputId = input.id;
-            
-            // Add proper event listeners with preventDefault to stop navigation
-            decrementBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.handleNumericInput(inputId, false);
-            });
-            
-            incrementBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.handleNumericInput(inputId, true);
-            });
-        }
-    });
-
-    // Alternative approach: If the buttons are using onclick attributes in HTML
-    // This solution works even if the buttons don't use the class structure above
-    const allIncrementButtons = document.querySelectorAll('button[onclick*="handleNumericInput"], a[onclick*="handleNumericInput"]');
-    allIncrementButtons.forEach(button => {
-        // Extract the original onclick function
+    // Fix for the + and - buttons in number inputs
+    // This replaces the inline onclick attributes with proper event listeners
+    const allNumberInputButtons = document.querySelectorAll('.number-input button');
+    allNumberInputButtons.forEach(button => {
+        // Get the original onclick attribute
         const originalOnclick = button.getAttribute('onclick');
         
-        // Remove the original onclick attribute
-        button.removeAttribute('onclick');
-        
-        // Add a new event listener that prevents default and then calls the original function
+        // Add a click event listener with preventDefault
         button.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Execute the original onclick code
-            eval(originalOnclick);
+            e.preventDefault(); // This prevents the default action (like form submission)
+            
+            // Execute the original onclick function
+            if (originalOnclick) {
+                // The eval is needed to execute the string as JavaScript
+                eval(originalOnclick);
+            }
         });
+        
+        // We can leave the original onclick attribute in place
+        // The event listener will fire first and prevent the default action
     });
 });
