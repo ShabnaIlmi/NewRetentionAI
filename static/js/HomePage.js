@@ -19,10 +19,10 @@ document.addEventListener("DOMContentLoaded", function () {
         // Show the selected form based on the formId passed
         if (formId === "form1") {
             form1.style.display = "block"; // Show Bank Churn form
-            form1.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Scroll to Bank Churn form
+            form1.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
         } else if (formId === "form2") {
             form2.style.display = "block"; // Show Telecom Churn form
-            form2.scrollIntoView({ behavior: 'smooth', block: 'start' }); // Scroll to Telecom Churn form
+            form2.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
         }
     }
 
@@ -241,7 +241,7 @@ document.addEventListener("DOMContentLoaded", function () {
             num_of_products: products,
             has_cr_card: creditCard === "Yes" ? 1 : 0,
             is_active_member: activeMember === "Yes" ? 1 : 0,
-            estimated_salary: parseFloat(salary), // Ensure this is a float
+            estimated_salary: parseFloat(salary), 
             satisfaction_score: satisfactionScore,
             point_earned: pointsEarned,
             gender: gender,

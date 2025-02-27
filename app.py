@@ -28,7 +28,7 @@ except Exception as e:
     exit(1)
 
 # Function to Parse Bank Customer Form Data
-def parse_banking_form(form_data):
+def parse_telecom_form(form_data):
     try:
         tenure = int(form_data['tenure'])
         monthly_charges = float(form_data['monthly_charges'])
@@ -81,7 +81,7 @@ def parse_banking_form(form_data):
         raise ValueError(f"Error processing form data: {e}")
 
 # Function to Parse Telecom Customer Form Data
-def parse_telecom_form(form_data):
+def parse_banking_form(form_data):
     try:
         credit_score = int(form_data['credit_score'])
         age = int(form_data['age'])
@@ -119,7 +119,7 @@ def parse_telecom_form(form_data):
 @app.route('/api/bank-churn-prediction', methods=['POST'])
 def predict_banking():
     try:
-        form_data = request.get_json()  # Parse incoming JSON request
+        form_data = request.get_json()  
         user_data = parse_banking_form(form_data)
         user_data_scaled = banking_scaler.transform(user_data)
         prediction = banking_model.predict(user_data_scaled)
