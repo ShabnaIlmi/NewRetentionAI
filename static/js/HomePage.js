@@ -232,4 +232,46 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     });
+
+    // Find all numeric input groups with + and - buttons
+    const numericInputGroups = document.querySelectorAll('.numeric-input-group');
+    
+    numericInputGroups.forEach(group => {
+        const input = group.querySelector('input[type="number"]');
+        const decrementBtn = group.querySelector('.decrement-btn');
+        const incrementBtn = group.querySelector('.increment-btn');
+        
+        if (input && decrementBtn && incrementBtn) {
+            const inputId = input.id;
+            
+            // Add proper event listeners with preventDefault to stop navigation
+            decrementBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.handleNumericInput(inputId, false);
+            });
+            
+            incrementBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.handleNumericInput(inputId, true);
+            });
+        }
+    });
+
+    // Alternative approach: If the buttons are using onclick attributes in HTML
+    // This solution works even if the buttons don't use the class structure above
+    const allIncrementButtons = document.querySelectorAll('button[onclick*="handleNumericInput"], a[onclick*="handleNumericInput"]');
+    allIncrementButtons.forEach(button => {
+        // Extract the original onclick function
+        const originalOnclick = button.getAttribute('onclick');
+        
+        // Remove the original onclick attribute
+        button.removeAttribute('onclick');
+        
+        // Add a new event listener that prevents default and then calls the original function
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Execute the original onclick code
+            eval(originalOnclick);
+        });
+    });
 });
