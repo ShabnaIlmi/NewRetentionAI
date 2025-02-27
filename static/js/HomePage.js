@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // Function to make API calls with form data - FIXED VERSION
+    // Function to make API calls with form data
     async function makePredictionRequest(endpoint, formData) {
         try {
             // Show loading indicator
@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Function to update results with prediction or error - FIXED VERSION
+    // Function to update results with raw prediction only
     function updateResults(resultsElement, data) {
         // Debug logs to troubleshoot display issues
         console.log("Updating results:", { 
@@ -188,34 +188,18 @@ document.addEventListener("DOMContentLoaded", function () {
             resultsElement.appendChild(predictionElement);
         }
         
+        // Remove any existing classes
+        predictionElement.className = '';
+        
         if (data.error) {
             predictionElement.textContent = `Error: ${data.error}`;
             predictionElement.classList.add('error');
-            predictionElement.classList.remove('high-risk', 'low-risk');
-        } else if (data.prediction) {
-            // Calculate probability-like value based on prediction text
-            let churnProbability;
-            if (data.prediction === "Churned") {
-                churnProbability = Math.round(Math.random() * 30 + 70); // Random value between 70-100% for Churned
-            } else {
-                churnProbability = Math.round(Math.random() * 30); // Random value between 0-30% for Not Churned
-            }
-            
-            predictionElement.textContent = `Prediction: ${data.prediction}. This customer has a ${churnProbability}% chance of churning.`;
-            predictionElement.classList.remove('error');
-            
-            // Apply styling based on prediction
-            if (data.prediction === "Churned") {
-                predictionElement.classList.add('high-risk');
-                predictionElement.classList.remove('low-risk');
-            } else {
-                predictionElement.classList.add('low-risk');
-                predictionElement.classList.remove('high-risk');
-            }
+        } else if (data.prediction !== undefined) {
+            // Display the raw prediction value only
+            predictionElement.textContent = `Raw Model Prediction: ${data.prediction}`;
         } else {
             predictionElement.textContent = "Unable to get prediction. Please try again.";
             predictionElement.classList.add('error');
-            predictionElement.classList.remove('high-risk', 'low-risk');
         }
     }
 
@@ -399,10 +383,13 @@ Do you want to proceed?`;
         const seniorCitizen = document.querySelector('input[name="seniorCitizen"]:checked')?.value || "Not Selected";
         const partner = document.querySelector('input[name="partner"]:checked')?.value || "Not Selected";
         const dependents = document.querySelector('input[name="dependents"]:checked')?.value || "Not Selected";
-        const paperlessBilling = document.querySelector('input[name="paperlessBilling"]:checked')?.value || "Yes"; // Default to Yes if not present
-        const phoneService = document.querySelector('input[name="phoneService"]:checked')?.value || "Yes"; // Default to Yes if not present
-        const multipleLines = document.querySelector('input[name="multipleLines"]:checked')?.value || "Yes"; // Default to Yes if not present
-        const paymentMethod = document.getElementById("paymentMethod")?.value || "Electronic check"; // Default to Electronic check if not present
+        const paperlessBilling = document.querySelector('input[name="paperlessBilling"]:checked')?.value || "Yes"; 
+        const phoneService = document.querySelector('input[name="phoneService"]:checked')?.value || "Yes"; 
+        const multipleLines = document.querySelector('input[name="multipleLines"]:checked')?.value || "Yes"; 
+        const paymentMethod = document.getElementById("paymentMethod")?.value || "Electronic check"; 
+
+        // Calculate total charges (this was previously missing in the original code)
+        const totalCharges = monthlyCharges * accountLength;
 
         // Validate inputs
         if (!validateTelecomFormInputs(
@@ -413,8 +400,6 @@ Do you want to proceed?`;
         }
 
         // Prepare data for API - make sure field names match exactly what app.py expects
-        // Calculate total charges as a function of monthly charges and account length
-
         const formData = {
             tenure: accountLength,
             monthly_charges: monthlyCharges,
