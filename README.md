@@ -42,7 +42,6 @@ The datasets used to train the models can be found on Kaggle:
 1. Select the prediction model (Telecom or Banking).
 2. Upload the customer dataset in **CSV** format.
 3. Click **Predict** to generate churn predictions.
-4. Download the results if needed.
 
 ## Project Structure
 ```
