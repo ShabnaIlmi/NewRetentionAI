@@ -66,5 +66,5 @@ This project is licensed under the **MIT License**.
 - Fathima Shabna Ilmi
 
 ## Contact
-If you have any questions, feel free to contact me at **Shabna Ilmi(mailto:ilmishabna03@gmail.com)**.
+If you have any questions, feel free to contact me at **Shabna Ilmi - ilmishabna03@gmail.com)**.
 
